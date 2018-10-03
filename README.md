@@ -9,7 +9,8 @@ Expr -> Ident = Expr
 
 Term -> Factor ((* | /) Term)?
 
-Factor -> Ident 
+Factor -> -Factor 
+        | Ident 
         | Num 
         | '(' Expr ')'
 
