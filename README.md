@@ -13,9 +13,9 @@ Factor -> Ident
         | Num 
         | '(' Expr ')'
 
-Ident -> 'a' | 'b' | ... | 'z'
+Ident -> ('a' | 'b' | ... | 'z') ('a' | ... | 'z' | '0' | ... | '9')*
 
-Num -> '0' | '1' | ... | '9'
+Num -> ('0' | '1' | ... | '9')+
 ```
 
 Running the build script `build.sh` generates an executable `Main`. `Main` parses several inputs specified and terminates.
