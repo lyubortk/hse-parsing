@@ -9,6 +9,7 @@ data AST = ASum Operator AST AST
          | ANum Integer
          | AIdent String
          | ANegation AST
+         | AExp AST AST
 
 parse :: String -> Maybe AST
 parse input =
@@ -36,11 +37,20 @@ expression ts =
 
 term :: [Token] -> (AST, [Token])
 term ts =
-  let (factNode, ts') = factor ts in
+  let (expNode, ts') = expon ts in
   case lookup ts' of
     TOp op | op == Mult || op == Div ->
       let (termNode, ts'') = term $ accept ts' in
-      (AProd op factNode termNode, ts'')
+      (AProd op expNode termNode, ts'')
+    _ -> (expNode, ts')
+
+expon :: [Token] -> (AST, [Token])
+expon ts = 
+  let (factNode, ts') = factor ts in
+  case lookup ts' of
+    TOp op | op == Pow ->
+      let (expNode, ts'') = expon $ accept ts' in
+      (AExp factNode expNode, ts'')
     _ -> (factNode, ts')
 
 factor :: [Token] -> (AST, [Token])
@@ -75,9 +85,11 @@ instance Show AST where
                   AAssign  v e -> v ++ " =\n" ++ show' (ident n) e
                   ANum   i     -> show i
                   AIdent i     -> id i
-                  ANegation a  -> showOp Minus : "\n" ++ show' (ident n) a)
+                  ANegation a  -> showOp Minus : "\n" ++ show' (ident n) a
+                  AExp l r     -> showOp Pow : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r)
       ident = (+1)
       showOp Plus  = '+'
       showOp Minus = '-'
       showOp Mult  = '*'
       showOp Div   = '/'
+      showOp Pow   = '^'

@@ -13,6 +13,7 @@ data Operator = Plus
               | Minus
               | Mult
               | Div
+              | Pow
               deriving (Show, Eq)
 
 tokenize :: String -> [Token]
@@ -32,13 +33,14 @@ separate :: (a -> Bool) -> [a] -> ([a], [a])
 separate f s = (takeWhile f s, dropWhile f s)
 
 isOperator :: Char -> Bool
-isOperator x = x `elem` "+-*/"
+isOperator x = x `elem` "+-*/^"
 
 operator :: Char -> Operator
 operator c | c == '+' = Plus
            | c == '-' = Minus
            | c == '*' = Mult
            | c == '/' = Div
+           | c == '^' = Pow
 operator c = error ("Lexical error: " ++ c : " is not an operator!")
 
 isDigit :: Char -> Bool

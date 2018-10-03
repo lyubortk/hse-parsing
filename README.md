@@ -7,7 +7,9 @@ S -> Expr | \epsilon
 Expr -> Ident = Expr
       | Term ((+ | -) Expr)?
 
-Term -> Factor ((* | /) Term)?
+Term -> Exp ((* | /) Term)?
+
+Exp -> Factor (^ Exp)?
 
 Factor -> -Factor 
         | Ident 
