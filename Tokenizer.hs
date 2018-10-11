@@ -7,10 +7,11 @@ data Operator = Plus
               | Mult
               | Div
               | Pow
+              | SemiCol
               deriving (Show, Eq)
 
 isOperator :: Char -> Bool
-isOperator x = x `elem` "+-*/^"
+isOperator x = x `elem` "+-*/^;"
 
 operator :: Char -> Operator
 operator c | c == '+' = Plus
@@ -18,6 +19,7 @@ operator c | c == '+' = Plus
            | c == '*' = Mult
            | c == '/' = Div
            | c == '^' = Pow
+           | c == ';' = SemiCol
 operator c = error ("Lexical error: " ++ c : " is not an operator!")
 
 isNumber :: String -> Bool

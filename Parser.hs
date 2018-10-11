@@ -12,18 +12,29 @@ data AST = ASum T.Operator AST AST
          | ANum Integer
          | AIdent String
          | ANegation AST
+         | AExprGroup AST AST
 
 -- TODO: Rewrite this without using Success and Error
 parse :: String -> Maybe (Result AST)
 parse input =
   case input of
     [] -> Nothing
-    _ -> case expression input of
+    _ -> case exprgroup input of
            Success (tree, ts') ->
              if null (dropWhile isSpace ts')
              then Just (Success tree)
              else Just (Error ("Syntax error on: " ++ show ts')) -- Only a prefix of the input is parsed
            Error err -> Just (Error err) -- Legitimate syntax error
+
+exprgroup :: Parser AST
+exprgroup = 
+  expression >>= \l ->
+  ( ( 
+        (char ';') |> exprgroup >>= \r -> return (AExprGroup l r)
+    )  
+    <|> return l
+  )
+
 
 expression :: Parser AST
 expression =
@@ -87,8 +98,8 @@ plusMinus = map T.operator (char '+' <|> char '-')
 divMult :: Parser T.Operator
 divMult   = map T.operator (char '/' <|> char '*')
 
-powOp :: Parser T.Operator
-powOp     = map T.operator (char '^') 
+powOp :: Parser Char
+powOp     = char '^'
 
 
 instance Show AST where
@@ -97,16 +108,18 @@ instance Show AST where
       show' n t =
         (if n > 0 then \s -> concat (replicate (n - 1) "| ") ++ "|_" ++ s else id)
         (case t of
-                  ASum  op l r -> showOp op : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
-                  AProd op l r -> showOp op : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
-                  AAssign  v e -> v ++ " =\n" ++ show' (ident n) e
-                  ANum   i     -> show i
-                  ANegation a  -> showOp T.Minus : "\n" ++ show' (ident n) a 
-                  AExp l r     -> showOp T.Pow : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
-                  AIdent i     -> id i)
+                  ASum  op l r   -> showOp op : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
+                  AProd op l r   -> showOp op : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
+                  AAssign  v e   -> v ++ " =\n" ++ show' (ident n) e
+                  ANum   i       -> show i
+                  ANegation a    -> showOp T.Minus : "\n" ++ show' (ident n) a 
+                  AExp l r       -> showOp T.Pow : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
+                  AExprGroup l r -> showOp T.SemiCol : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
+                  AIdent i       -> id i)
       ident = (+1)
-      showOp T.Plus  = '+'
-      showOp T.Minus = '-'
-      showOp T.Mult  = '*'
-      showOp T.Div   = '/'
-      showOp T.Pow   = '^'
+      showOp T.Plus    = '+'
+      showOp T.Minus   = '-'
+      showOp T.Mult    = '*'
+      showOp T.Div     = '/'
+      showOp T.Pow     = '^'
+      showOp T.SemiCol = ';' 

@@ -23,3 +23,4 @@ main = do
   runParser "1*2-3/4+5"
   runParser "!"
   runParser "1 + 2"
+  runParser " var = 32^3 + (- 83)/32; a = 43; 44"
