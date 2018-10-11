@@ -3,12 +3,14 @@ module Parser (parse) where -- only expose the top-level parsing function
 import Combinators
 import qualified Tokenizer as T
 import Prelude hiding (lookup, (>>=), map, pred, return, elem)
+import Data.Char (isSpace)
 
 data AST = ASum T.Operator AST AST
          | AProd T.Operator AST AST
          | AAssign String AST
          | ANum Integer
          | AIdent String
+         | ANegation AST
 
 -- TODO: Rewrite this without using Success and Error
 parse :: String -> Maybe (Result AST)
@@ -17,7 +19,7 @@ parse input =
     [] -> Nothing
     _ -> case expression input of
            Success (tree, ts') ->
-             if null ts'
+             if null (dropWhile isSpace ts')
              then Just (Success tree)
              else Just (Error ("Syntax error on: " ++ show ts')) -- Only a prefix of the input is parsed
            Error err -> Just (Error err) -- Legitimate syntax error
@@ -52,6 +54,7 @@ factor =
   )
   <|> identifier
   <|> number
+  <|> (char '-') |> ( factor >>= \e -> return (ANegation e) )
 
 number :: Parser AST
 number     = map (ANum . T.number) (sat T.isNumber elem)
@@ -87,6 +90,7 @@ instance Show AST where
                   AProd op l r -> showOp op : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
                   AAssign  v e -> v ++ " =\n" ++ show' (ident n) e
                   ANum   i     -> show i
+                  ANegation a  -> showOp T.Minus : "\n" ++ show' (ident n) a 
                   AIdent i     -> id i)
       ident = (+1)
       showOp T.Plus  = '+'

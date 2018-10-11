@@ -1,7 +1,7 @@
 module Combinators where
 -- Make sure that the names don't clash
 import Prelude hiding (lookup, (>>=), map, pred, return, elem)
-import Data.Char (isAlphaNum)
+import Data.Char (isAlphaNum, isSpace)
 
 -- Input abstraction
 type Input = String
@@ -28,9 +28,10 @@ p <|> q = \inp ->
 infixl 7 >>=
 (>>=) :: Parser a -> (a -> Parser b ) -> Parser b
 p >>= q = \inp ->
-  case p inp of
-    Success (r, inp') -> q r inp'
-    Error err -> Error err
+  let inp'' = dropWhile isSpace inp in
+    case p inp'' of
+      Success (r, inp') -> q r inp'
+      Error err -> Error err
 
 -- Sequential combinator which ignores the result of the first parser
 infixl 7 |>
@@ -47,9 +48,10 @@ zero err = const $ Error err
 
 -- Chops of the first AlphaNum sequence of the string
 elem :: Parser String
-elem [] = Error "Empty string"
 elem str = let (f, s) = span isAlphaNum str in
-             Success (f, s)
+             case f of
+               (x:xs) -> Success (f, s)
+               [] -> Error "Empty string"
 
 firstChar :: Parser Char
 firstChar (c : cs) = Success (c, cs)
