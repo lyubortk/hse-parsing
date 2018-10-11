@@ -1,5 +1,7 @@
 module Tokenizer where
 
+import Data.Char (isAlpha, isAlphaNum, isDigit)
+
 data Operator = Plus
               | Minus
               | Mult
@@ -16,24 +18,15 @@ operator c | c == '+' = Plus
            | c == '/' = Div
 operator c = error ("Lexical error: " ++ c : " is not an operator!")
 
-isDigit :: Char -> Bool
-isDigit x = x `elem` "0123456789"
+isNumber :: String -> Bool
+isNumber str = all isDigit str
 
-digit :: Char -> Integer
-digit c | c == '0' = 0
-        | c == '1' = 1
-        | c == '2' = 2
-        | c == '3' = 3
-        | c == '4' = 4
-        | c == '5' = 5
-        | c == '6' = 6
-        | c == '7' = 7
-        | c == '8' = 8
-        | c == '9' = 9
-digit c = error ("Lexical error: " ++ c : " is not a digit!")
+number :: String -> Integer
+number str = read str::Integer
 
-isAlpha :: Char -> Bool
-isAlpha c = c `elem` ['a' .. 'z']
+isIdent :: String -> Bool
+isIdent (c:cs) = (isAlpha c) && (all isAlphaNum cs)
+isIdent [] = False
 
 alpha :: Char -> Char
 alpha c = c

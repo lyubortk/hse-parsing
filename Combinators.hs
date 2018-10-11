@@ -1,6 +1,7 @@
 module Combinators where
 -- Make sure that the names don't clash
 import Prelude hiding (lookup, (>>=), map, pred, return, elem)
+import Data.Char (isAlphaNum)
 
 -- Input abstraction
 type Input = String
@@ -44,14 +45,19 @@ return r inp = Success (r, inp)
 zero :: String -> Parser a
 zero err = const $ Error err
 
--- Chops of the first element of the string
-elem :: Parser Char
-elem (c : cs) = Success (c, cs)
+-- Chops of the first AlphaNum sequence of the string
+elem :: Parser String
 elem [] = Error "Empty string"
+elem str = let (f, s) = span isAlphaNum str in
+             Success (f, s)
+
+firstChar :: Parser Char
+firstChar (c : cs) = Success (c, cs)
+firstChar [] = Error "Empty string"
 
 -- Checks if the first character of the string is the given one
 char :: Char -> Parser Char
-char c = sat (== c) elem
+char c = sat (== c) firstChar
 
 -- Checks if the parser result satisfies the predicate
 sat :: (a -> Bool) -> Parser a -> Parser a
