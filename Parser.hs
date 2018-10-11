@@ -2,12 +2,13 @@ module Parser (parse) where -- only expose the top-level parsing function
 
 import Combinators
 import qualified Tokenizer as T
-import Prelude hiding (lookup, (>>=), map, pred, return, elem)
+import Prelude hiding (lookup, (>>=), map, pred, return, elem, exp)
 import Data.Char (isSpace)
 
 data AST = ASum T.Operator AST AST
          | AProd T.Operator AST AST
          | AAssign String AST
+         | AExp AST AST
          | ANum Integer
          | AIdent String
          | ANegation AST
@@ -39,9 +40,18 @@ expression =
 term :: Parser AST
 term =
   -- make sure we don't reparse the factor (Term -> Factor (('/' | '*') Term | epsilon ))
-  factor >>= \l ->
+  exp >>= \l ->
   ( ( divMult >>= \op ->
       term    >>= \r  -> return (AProd op l r)
+    )
+    <|> return l
+  )
+
+exp :: Parser AST
+exp =
+  factor >>= \l ->
+  ( ( powOp |>
+      exp   >>= \r  -> return (AExp l r)
     )
     <|> return l
   )
@@ -77,7 +87,8 @@ plusMinus = map T.operator (char '+' <|> char '-')
 divMult :: Parser T.Operator
 divMult   = map T.operator (char '/' <|> char '*')
 
-
+powOp :: Parser T.Operator
+powOp     = map T.operator (char '^') 
 
 
 instance Show AST where
@@ -91,9 +102,11 @@ instance Show AST where
                   AAssign  v e -> v ++ " =\n" ++ show' (ident n) e
                   ANum   i     -> show i
                   ANegation a  -> showOp T.Minus : "\n" ++ show' (ident n) a 
+                  AExp l r     -> showOp T.Pow : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
                   AIdent i     -> id i)
       ident = (+1)
       showOp T.Plus  = '+'
       showOp T.Minus = '-'
       showOp T.Mult  = '*'
       showOp T.Div   = '/'
+      showOp T.Pow   = '^'
