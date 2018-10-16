@@ -1,7 +1,8 @@
 module Combinators where
 -- Make sure that the names don't clash
 import Prelude hiding (lookup, (>>=), map, pred, return, elem)
-import Data.Char (isAlphaNum, isSpace)
+import Data.Char (isSpace, isAlphaNum)
+import Tokenizer ((|||), isUnderscore)
 
 -- Input abstraction
 type Input = String
@@ -46,10 +47,11 @@ zero err = const $ Error err
 
 -- Chops off the first AlphaNum sequence of the string
 elem :: Parser String
-elem str = let (f, s) = span isAlphaNum str in
+elem str = let (f, s) = span (isAlphaNum ||| isUnderscore) str in
              case f of
                (x:xs) -> Success (f, s)
-               [] -> Error "Empty string"
+               [] -> Error ("Substring '" ++ str  ++
+                            "' does not start with [0-9a-zA-Z_]")
 
 -- Checks whether the string is empty
 isEmpty :: Parser String
@@ -60,7 +62,10 @@ isEmpty a  = Error a
 parseFirstN :: Int -> Parser String
 parseFirstN n cs = case (n <= length cs) of
                      True  -> Success (take n cs, drop n cs)
-                     False -> Error "Wrong opeation"
+                     False -> Error ("Can't chop off '"      ++ 
+                                     show n                  ++ 
+                                     "' elements of string " ++ 
+                                     cs)
 
 -- Chops off the first character
 firstChar :: Parser Char

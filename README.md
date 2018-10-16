@@ -32,9 +32,9 @@ Factor -> -Factor
         | Num 
         | '(' NumExpr ')'
 
-Ident -> ('a' | 'b' | ... | 'z') ('a' | ... | 'z' | '0' | ... | '9')*
+Ident -> [a-zA-Z_][a-zA-Z0-9_]*
 
-Num -> ('0' | '1' | ... | '9')+
+Num -> [0-9]+
 ```
 
 Running the build script `build.sh` generates an executable `Main`. `Main` parses several inputs specified and terminates.
