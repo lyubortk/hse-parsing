@@ -11,8 +11,8 @@ runParser input = do
   print $ parse input
   putStrLn ""
 
-instance {-# OVERLAPPING #-} Show a => Show (Maybe (Result a)) where
-  show (Just (Success tree)) = show tree
+instance {-# OVERLAPPING #-} Show a => Show (Maybe (Result (a, b))) where
+  show (Just (Success (tree, _))) = show tree
   show (Just (Error err)) = "Syntax error: " ++ err
   show Nothing = "Empty tree"
 

@@ -19,16 +19,9 @@ data AST = AExprGroup AST AST
          | AEps
 
 -- TODO: Rewrite this without using Success and Error
-parse :: String -> Maybe (Result AST)
-parse input =
-  case input of
-    [] -> Nothing
-    _ -> case exprgroup input of
-           Success (tree, ts') ->
-             if null (dropWhile isSpace ts')
-             then Just (Success tree)
-             else Just (Error ("Syntax error on: " ++ show ts')) -- Only a prefix of the input is parsed
-           Error err -> Just (Error err) -- Legitimate syntax error
+parse :: String -> Maybe (Result (AST, String))
+parse [] = Nothing
+parse a  = Just ((exprgroup >>= \r -> isEmpty |> return r) a)
 
 exprgroup :: Parser AST
 exprgroup = 

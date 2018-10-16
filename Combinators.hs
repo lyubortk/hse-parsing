@@ -9,8 +9,7 @@ type Input = String
 -- Result is polymorphic in the ... result
 data Result r = Success r
               | Error String
-              deriving (Show)
-
+             
 -- The result of parsing is some payload r and the suffix which wasn't parsed
 type Parser r = Input -> Result (r, Input)
 
@@ -52,11 +51,18 @@ elem str = let (f, s) = span isAlphaNum str in
                (x:xs) -> Success (f, s)
                [] -> Error "Empty string"
 
+-- Checks whether the string is empty
+isEmpty :: Parser String
+isEmpty [] = Success ([],[])
+isEmpty a  = Error a
+
+-- Chops off first n characters
 parseFirstN :: Int -> Parser String
 parseFirstN n cs = case (n <= length cs) of
                      True  -> Success (take n cs, drop n cs)
                      False -> Error "Wrong opeation"
 
+-- Chops off the first character
 firstChar :: Parser Char
 firstChar (c : cs) = Success (c, cs)
 firstChar [] = Error "Empty string"
