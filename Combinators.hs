@@ -19,8 +19,8 @@ type Parser r = Input -> Result (r, Input)
 infixl 6 <|>
 (<|>) :: Parser a -> Parser a -> Parser a
 p <|> q = \inp ->
-  case p inp of
-    Error _ -> q inp
+  case p (dropWhile isSpace inp) of
+    Error _ -> q (dropWhile isSpace inp)
     result  -> result
 
 -- Sequential combinator: if the first parser successfully parses some prefix, the second is run on the suffix
@@ -28,10 +28,9 @@ p <|> q = \inp ->
 infixl 7 >>=
 (>>=) :: Parser a -> (a -> Parser b ) -> Parser b
 p >>= q = \inp ->
-  let inp'' = dropWhile isSpace inp in
-    case p inp'' of
-      Success (r, inp') -> q r inp'
-      Error err -> Error err
+  case p (dropWhile isSpace inp) of
+    Success (r, inp') -> q r (dropWhile isSpace inp')
+    Error err -> Error err
 
 -- Sequential combinator which ignores the result of the first parser
 infixl 7 |>
@@ -46,12 +45,17 @@ return r inp = Success (r, inp)
 zero :: String -> Parser a
 zero err = const $ Error err
 
--- Chops of the first AlphaNum sequence of the string
+-- Chops off the first AlphaNum sequence of the string
 elem :: Parser String
 elem str = let (f, s) = span isAlphaNum str in
              case f of
                (x:xs) -> Success (f, s)
                [] -> Error "Empty string"
+
+parseFirstN :: Int -> Parser String
+parseFirstN n cs = case (n <= length cs) of
+                     True  -> Success (take n cs, drop n cs)
+                     False -> Error "Wrong opeation"
 
 firstChar :: Parser Char
 firstChar (c : cs) = Success (c, cs)

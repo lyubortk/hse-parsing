@@ -5,14 +5,18 @@ import qualified Tokenizer as T
 import Prelude hiding (lookup, (>>=), map, pred, return, elem, exp)
 import Data.Char (isSpace)
 
-data AST = ASum T.Operator AST AST
-         | AProd T.Operator AST AST
+data AST = AExprGroup AST AST
+         | AConcat AST AST
+         | AList AST
+         | AListCore AST AST
          | AAssign String AST
+         | ASum T.Operator AST AST
+         | AProd T.Operator AST AST
          | AExp AST AST
          | ANum Integer
          | AIdent String
          | ANegation AST
-         | AExprGroup AST AST
+         | AEps
 
 -- TODO: Rewrite this without using Success and Error
 parse :: String -> Maybe (Result AST)
@@ -28,23 +32,64 @@ parse input =
 
 exprgroup :: Parser AST
 exprgroup = 
-  expression >>= \l ->
+  baseexpr >>= \l ->
   ( ( 
         (char ';') |> exprgroup >>= \r -> return (AExprGroup l r)
     )  
     <|> return l
   )
 
-
-expression :: Parser AST
-expression =
+baseexpr :: Parser AST
+baseexpr =
   ( identifier >>= \(AIdent i) ->
     assignment |>
-    expression >>= \e -> return (AAssign i e)
+    baseexpr >>= \e -> return (AAssign i e)
+  )
+  <|> ( identifier >>= \l ->
+        concat_op |>
+        listexpr >>= \r -> return (AConcat l r)
+      )
+  <|> numexpr 
+  <|> listexpr 
+
+listexpr :: Parser AST
+listexpr = 
+  ( identifier >>= \(AIdent i) ->
+    assignment |>
+    listexpr >>= \e -> return (AAssign i e)
+  )
+  <|> ( list >>= \l ->
+        concat_op |>
+        listexpr >>= \r -> return (AConcat l r)
+      )
+  <|> list
+
+list :: Parser AST
+list = 
+  ( lbracket |>
+    listcore >>= \e ->
+    rbracket |> return (AList e)
+  )
+  <|> identifier
+     
+listcore :: Parser AST
+listcore =
+  ( baseexpr >>= \l ->
+    comma |>
+    listcore >>= \r -> return (AListCore l r)
+  )
+  <|> baseexpr
+  <|> return AEps
+
+numexpr :: Parser AST
+numexpr =
+  ( identifier >>= \(AIdent i) ->
+    assignment |>
+    numexpr >>= \e -> return (AAssign i e)
   )
   <|> ( term       >>= \l  -> -- Here the identifier is parsed twice :(
         plusMinus  >>= \op ->
-        expression >>= \r  -> return (ASum op l r)
+        numexpr >>= \r  -> return (ASum op l r)
       )
   <|> term
 
@@ -70,18 +115,30 @@ exp =
 factor :: Parser AST
 factor =
   ( lparen |>
-    expression >>= \e ->
+    numexpr >>= \e ->
     rparen |> return e -- No need to keep the parentheses
   )
   <|> identifier
   <|> number
-  <|> (char '-') |> ( factor >>= \e -> return (ANegation e) )
+  <|> (char '-') |> factor >>= \e -> return (ANegation e)
 
 number :: Parser AST
 number     = map (ANum . T.number) (sat T.isNumber elem)
 
 identifier :: Parser AST
 identifier = map AIdent (sat T.isIdent elem)
+
+lbracket :: Parser Char
+lbracket = char '['
+
+rbracket :: Parser Char
+rbracket = char ']'
+
+comma :: Parser Char
+comma = char ','
+
+concat_op :: Parser String
+concat_op = sat (== "++") (parseFirstN 2)
 
 lparen :: Parser Char
 lparen = char '('
@@ -115,7 +172,11 @@ instance Show AST where
                   ANegation a    -> showOp T.Minus : "\n" ++ show' (ident n) a 
                   AExp l r       -> showOp T.Pow : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
                   AExprGroup l r -> showOp T.SemiCol : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
-                  AIdent i       -> id i)
+                  AConcat l r    -> "++" ++ "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
+                  AListCore l r  -> ',' : "\n" ++ show' (ident n) l ++ "\n" ++ show' (ident n) r
+                  AIdent i       -> id i
+                  AList i        -> "[..]" ++ "\n" ++ show' (ident n) i
+                  AEps           -> "\\eps")
       ident = (+1)
       showOp T.Plus    = '+'
       showOp T.Minus   = '-'

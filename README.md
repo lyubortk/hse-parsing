@@ -4,10 +4,24 @@ A simple recursive descent parser. Written for the formal languages course in HS
 ```
 S -> ExprGroup | \epsilon
 
-ExprGroup -> Expr (; ExprGroup)?
+ExprGroup -> BaseExpr (; ExprGroup)?
 
-Expr -> Ident = Expr
-      | Term ((+ | -) Expr)?
+BaseExpr -> Ident = BaseExpr
+          | Ident ++ ListExpr  // :(
+          | NumExpr 
+          | ListExpr
+
+ListExpr -> Ident = ListExpr
+          | List (++ ListExpr)?
+
+List -> '[' ListCore ']'
+      | Ident
+
+ListCore -> BaseExpr (, ListCore)?
+          | \epsilon
+
+NumExpr -> Ident = NumExpr
+         | Term ((+ | -) NumExpr)?
 
 Term -> Exp ((* | /) Term)?
 
@@ -16,7 +30,7 @@ Exp -> Factor (^ Exp)?
 Factor -> -Factor 
         | Ident 
         | Num 
-        | '(' Expr ')'
+        | '(' NumExpr ')'
 
 Ident -> ('a' | 'b' | ... | 'z') ('a' | ... | 'z' | '0' | ... | '9')*
 
